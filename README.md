@@ -5,7 +5,6 @@ DeCo is a web application that enhances images by automatically **removing blur 
 Users can upload an image, and the system processes it to:
 - **Deblur** the image and recover sharper details
 - **Colorize** grayscale or faded images
-- 
 The processed image can then be downloaded in **PNG or JPG format**.
 ---
 
@@ -86,6 +85,9 @@ Users may also be given the option to **choose which model to run**, allowing co
 # Project Roles
 
 Roles will be used to **track task ownership and project progress**.
+
+
+``` I usually use python hope everyone is okay with doing whole project in python frontend we can discuss and agree upon ```
 
 ### Backend Development
 
