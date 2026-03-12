@@ -6,9 +6,11 @@ Users can upload an image, and the system processes it to:
 - **Deblur** the image and recover sharper details
 - **Colorize** grayscale or faded images
 The processed image can then be downloaded in **PNG or JPG format**.
+
 ---
 
 # Setup Instructions
+
 ### To install the required dependencies, run:
 
 *For Bash (Git Bash / MINGW64)*
@@ -32,6 +34,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 
 ---
+
 # Features
 
 - Simple image upload through a web interface
