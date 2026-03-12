@@ -1,0 +1,14 @@
+TODO - models/
+
+Store model weights here. Two sub-folders expected:
+
+- deblurring/   : weights for the deblurring model
+- colorization/ : weights for the colorization model
+
+Each can have:
+- pretrained/ : downloaded open-source weights
+- custom/     : weights from our own training runs
+
+No model has been chosen yet. Once decided, download the weights,
+drop them in the right folder, and update app_config.yaml
+with the filename and path.

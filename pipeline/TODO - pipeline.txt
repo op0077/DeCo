@@ -1,0 +1,15 @@
+TODO - pipeline/
+
+This is the core processing logic. It sits between the UI and the models.
+
+Files to create:
+- base.py     : abstract base class that all pipeline steps inherit from
+- deblur.py   : loads the deblurring model and runs it on an image
+- colorize.py : loads the colorization model and runs it on an image
+- enhance.py  : runs deblur then colorize in order, returns final image
+
+The UI should only ever call enhance.py.
+It should never talk to models directly.
+
+Input  : an image file (jpg or png)
+Output : an enhanced image file (jpg or png)

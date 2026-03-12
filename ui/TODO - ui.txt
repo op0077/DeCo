@@ -1,0 +1,18 @@
+TODO - ui/
+
+Build the user-facing interface using Streamlit (for now).
+
+File to create:
+- app.py : the main Streamlit app
+
+What it needs to do:
+1. Let the user upload a jpg or png image
+2. Show a processing indicator while the pipeline runs
+3. Display a before/after preview of the image
+4. Let the user download the result as jpg or png
+
+The UI should only call pipeline/enhance.py.
+No model or processing logic belongs here.
+
+If we switch from Streamlit to a web framework later,
+only this folder changes. Everything else stays the same.
