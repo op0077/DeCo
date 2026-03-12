@@ -5,6 +5,7 @@ DeCo is a web application that enhances images by automatically **removing blur 
 Users can upload an image, and the system processes it to:
 - **Deblur** the image and recover sharper details
 - **Colorize** grayscale or faded images
+
 The processed image can then be downloaded in **PNG or JPG format**.
 
 ---
@@ -12,25 +13,40 @@ The processed image can then be downloaded in **PNG or JPG format**.
 # Setup Instructions
 
 ### To install the required dependencies, run:
+<br><br/>
+**For Bash (Git Bash / MINGW64)**
 
-*For Bash (Git Bash / MINGW64)*
 python -m venv venv
+
 source venv/Scripts/activate
+
 pip install -r requirements.txt
 
-*For PowerShell*
+<br><br/>
+**For PowerShell**
+
 python -m venv venv
+
 .\venv\Scripts\Activate.ps1
+
 pip install -r requirements.txt
 
-*For Windows Command Prompt (CMD)*
+<br><br/>
+**For Windows Command Prompt (CMD)**
+
 python -m venv venv
+
 venv\Scripts\activate
+
 pip install -r requirements.txt
 
-*For macOS / Linux*
+<br><br/>
+**For macOS / Linux**
+
 python3 -m venv venv
+
 source venv/bin/activate
+
 pip install -r requirements.txt
 
 ---
