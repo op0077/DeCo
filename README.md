@@ -8,6 +8,30 @@ Users can upload an image, and the system processes it to:
 The processed image can then be downloaded in **PNG or JPG format**.
 ---
 
+# Setup Instructions
+### To install the required dependencies, run:
+
+*For Bash (Git Bash / MINGW64)*
+python -m venv venv
+source venv/Scripts/activate
+pip install -r requirements.txt
+
+*For PowerShell*
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+
+*For Windows Command Prompt (CMD)*
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+
+*For macOS / Linux*
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+---
 # Features
 
 - Simple image upload through a web interface
