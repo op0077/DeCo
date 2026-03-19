@@ -5,8 +5,10 @@ import os
 sys.path.append(os.path.abspath(".."))
 
 from pipeline import deblurring
+from pipeline import colorizing
 from PIL import Image   
 import io
+import os
 import numpy as np
 import cv2
 import base64
@@ -20,7 +22,9 @@ st.set_page_config(layout="wide")
 # Background
 # ---------------------------
 def set_bg():
-    with open("./assests/background_images/deco_bg_4.png", "rb") as img:
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    bg_path = os.path.join(script_dir, "assests/background_images/deco_bg_4.png")
+    with open(bg_path, "rb") as img:
         encoded = base64.b64encode(img.read()).decode()
 
     css = f"""
@@ -138,15 +142,21 @@ if image_file is not None:
 
         # Deblurring
         if task in ["Deblurring", "Both"]:
+            model_deblur = model if task == "Deblurring" else model_deblur
             func_deblur = deblurring.Deblurr(result)
             result = func_deblur.apply_deblur()
 
-        # Dummy colorization
+        # Colorization
         if task in ["Colorization", "Both"]:
-            gray = cv2.cvtColor(result, cv2.COLOR_BGR2GRAY)
-            result = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
+            model_color = model if task == "Colorization" else model_color
+            func_colorize = colorizing.Colorize(result, model_color)
+            result = func_colorize.apply_colorize()
 
-        result_img = Image.fromarray(result)
+        # OpenCV arrays are BGR; convert to RGB before creating PIL image.
+        if len(result.shape) == 2:
+            result_img = Image.fromarray(result)
+        else:
+            result_img = Image.fromarray(cv2.cvtColor(result, cv2.COLOR_BGR2RGB))
 
         with col2:
             st.subheader("Processed Image")

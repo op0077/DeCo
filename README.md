@@ -15,39 +15,44 @@ The processed image can then be downloaded in **PNG or JPG format**.
 ### To install the required dependencies, run:
 <br><br/>
 **For Bash (Git Bash / MINGW64)**
-
+<code>
 python -m venv venv
 
 source venv/Scripts/activate
 
 pip install -r requirements.txt
-
+</code>
 <br><br/>
 **For PowerShell**
-
+<code>
 python -m venv venv
 
 .\venv\Scripts\Activate.ps1
 
 pip install -r requirements.txt
-
+</code>
 <br><br/>
 **For Windows Command Prompt (CMD)**
-
+<code>
 python -m venv venv
 
 venv\Scripts\activate
 
 pip install -r requirements.txt
-
+</code>
 <br><br/>
 **For macOS / Linux**
-
+<code>
 python3 -m venv venv
 
 source venv/bin/activate
 
 pip install -r requirements.txt
+</code>
+
+<br><br/>
+
+Then do, <code>python -m streamlit run ui/streamlit_v2.py</code>
 
 ---
 
