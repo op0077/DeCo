@@ -90,6 +90,25 @@ task = st.sidebar.selectbox(
     ["Deblurring", "Colorization", "Both"]
 )
 
+saturation_factor = 1.25
+force_recolor = False
+if task in ["Colorization", "Both"]:
+    saturation_factor = st.sidebar.slider(
+        "Color Saturation",
+        min_value=1.0,
+        max_value=2.0,
+        value=1.25,
+        step=0.05,
+        help="Increase saturation for colorized output."
+    )
+    color_mode = st.sidebar.radio(
+        "Color Mode",
+        ["Preserve existing colors", "Force recolor (grayscale-only)"],
+        index=0,
+        help="Use Force recolor only for grayscale/faded photos."
+    )
+    force_recolor = color_mode == "Force recolor (grayscale-only)"
+
 # Model options
 if task == "Deblurring":
     model = st.sidebar.selectbox(
@@ -100,7 +119,7 @@ if task == "Deblurring":
 elif task == "Colorization":
     model = st.sidebar.selectbox(
         "Select Colorization Model",
-        ["color_model1", "color_model2", "color_model3"]
+        ["color_model1"]
     )
 
 else:
@@ -149,7 +168,20 @@ if image_file is not None:
         # Colorization
         if task in ["Colorization", "Both"]:
             model_color = model if task == "Colorization" else model_color
-            func_colorize = colorizing.Colorize(result, model_color)
+            # Backward-compatible fallback if an older Colorize signature is loaded.
+            try:
+                func_colorize = colorizing.Colorize(
+                    result,
+                    model_color,
+                    saturation_factor=saturation_factor,
+                    force_recolor=force_recolor,
+                )
+            except TypeError:
+                func_colorize = colorizing.Colorize(result, model_color)
+                if hasattr(func_colorize, "saturation_factor"):
+                    func_colorize.saturation_factor = saturation_factor
+                if hasattr(func_colorize, "force_recolor"):
+                    func_colorize.force_recolor = force_recolor
             result = func_colorize.apply_colorize()
 
         # OpenCV arrays are BGR; convert to RGB before creating PIL image.
