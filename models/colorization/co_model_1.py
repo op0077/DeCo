@@ -1,4 +1,6 @@
 import os
+import argparse
+from pathlib import Path
 
 import cv2
 import numpy as np
@@ -35,7 +37,10 @@ class ColorizeNet(nn.Module):
 
 
 class ColorizeModel:
-    """Loads the model and runs colorization inference."""
+    """Loads the model and runs colorization inference.
+    If no trained weights are found, it will gracefully degrade to a grayscale fallback.
+    L (lightness/grayscale) in → model → ab (color) out
+    """
 
     def __init__(self, model_path=None, device="cpu"):
         self.device = torch.device(device)
@@ -153,3 +158,152 @@ class ColorizeModel:
         colorized = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
         colorized = cv2.resize(colorized, (original_img.shape[1], original_img.shape[0]))
         return colorized
+
+
+def train_colorize_net(
+    epochs=10,
+    steps_per_epoch=500,
+    batch_size=16,
+    learning_rate=1e-4,
+    image_size=256,
+    num_workers=0,
+    device=None,
+    checkpoint_dir=None,
+    checkpoint_name="co_model_1.pth",
+    log_interval=10,
+    saturation_weight=0.1,
+    seed=42,
+):
+    """Train ColorizeNet using streaming data from data/data_preprocess.py."""
+    if device is None:
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
+    if checkpoint_dir is None:
+        checkpoint_dir = Path(__file__).resolve().parent
+    else:
+        checkpoint_dir = Path(checkpoint_dir)
+    checkpoint_dir.mkdir(parents=True, exist_ok=True)
+
+    repo_root = Path(__file__).resolve().parents[2]
+    if str(repo_root) not in os.sys.path:
+        os.sys.path.insert(0, str(repo_root))
+
+    from data.colorizing_data_preprocess import build_colorization_dataloader
+
+    dataloader = build_colorization_dataloader(
+        batch_size=batch_size,
+        image_size=(image_size, image_size),
+        num_workers=num_workers,
+        seed=seed,
+    )
+
+    model = ColorizeNet().to(device)
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    criterion = nn.L1Loss()
+
+    def combined_loss(ab_pred, ab_target, saturation_weight=0.1):
+        """L1 loss + saturation penalty to encourage colorful predictions."""
+        l1 = criterion(ab_pred, ab_target)
+        
+        # Saturation loss: penalize low magnitude in ab space
+        # ||ab|| should be high for colorful outputs
+        ab_magnitude = torch.sqrt(torch.sum(ab_pred ** 2, dim=1, keepdim=True) + 1e-8)
+        saturation_loss = torch.mean(torch.clamp(0.5 - ab_magnitude, min=0))
+        
+        return l1 + saturation_weight * saturation_loss
+
+    model.train()
+    for epoch in range(1, epochs + 1):
+        running_loss = 0.0
+        step = 0
+
+        data_iter = iter(dataloader)
+        while step < steps_per_epoch:
+            try:
+                l_input, ab_target = next(data_iter)
+            except StopIteration:
+                data_iter = iter(dataloader)
+                l_input, ab_target = next(data_iter)
+
+            non_blocking = device != "cpu"
+            l_input = l_input.to(device, non_blocking=non_blocking)
+            ab_target = ab_target.to(device, non_blocking=non_blocking)
+
+            optimizer.zero_grad(set_to_none=True)
+            ab_pred = model(l_input)
+            loss = combined_loss(ab_pred, ab_target, saturation_weight=saturation_weight)
+            loss.backward()
+            optimizer.step()
+
+            running_loss += float(loss.item())
+            step += 1
+
+        avg_loss = running_loss / float(steps_per_epoch)
+        print(f"Epoch [{epoch}/{epochs}] - loss: {avg_loss:.6f}")
+
+        epoch_ckpt = checkpoint_dir / f"co_model_1_epoch_{epoch}.pth"
+        torch.save(model.state_dict(), epoch_ckpt)
+
+    final_ckpt = checkpoint_dir / checkpoint_name
+    torch.save(model.state_dict(), final_ckpt)
+    print(f"Training complete. Saved final checkpoint to: {final_ckpt}")
+    return str(final_ckpt)
+
+
+def _build_arg_parser():
+    parser = argparse.ArgumentParser(description="Train co_model_1 colorization model")
+    parser.add_argument("--epochs", type=int, default=10)
+    parser.add_argument("--steps-per-epoch", type=int, default=500)
+    parser.add_argument("--batch-size", type=int, default=16)
+    parser.add_argument("--lr", type=float, default=1e-4)
+    parser.add_argument("--image-size", type=int, default=256)
+    parser.add_argument("--num-workers", type=int, default=0)
+    parser.add_argument("--device", type=str, default=None)
+    parser.add_argument("--checkpoint-dir", type=str, default=None)
+    parser.add_argument("--checkpoint-name", type=str, default="co_model_1.pth")
+    parser.add_argument("--log-interval", type=int, default=10)
+    parser.add_argument("--saturation-weight", type=float, default=0.1)
+    parser.add_argument("--seed", type=int, default=42)
+    return parser
+
+
+if __name__ == "__main__":
+    args = _build_arg_parser().parse_args()
+    train_colorize_net(
+        epochs=args.epochs,
+        steps_per_epoch=args.steps_per_epoch,
+        batch_size=args.batch_size,
+        learning_rate=args.lr,
+        image_size=args.image_size,
+        num_workers=args.num_workers,
+        device=args.device,
+        checkpoint_dir=args.checkpoint_dir,
+        checkpoint_name=args.checkpoint_name,
+        log_interval=args.log_interval,
+        saturation_weight=args.saturation_weight,
+        seed=args.seed,
+    )
+
+"""
+Training:
+
+Download color image from COCO stream
+Convert RGB → Lab color space (this splits color into 3 channels: L=lightness, a=green-red, b=blue-yellow)
+Extract L channel only → feed into model
+Model outputs predicted ab channels
+Compare predicted ab vs. ground-truth ab (from original image) → compute L1 loss → backprop
+
+Inference (colorization):
+
+Take grayscale image (or extract its L channel from Lab)
+Feed L into model → get predicted ab
+Merge L + predicted ab → convert back to RGB → colorized image
+So yes: L (lightness/grayscale) in → model → ab (color) out.
+
+(--epochs 20 --steps-per-epoch 100 --batch-size 4)
+20 epochs × 100 steps × 4 images = 8,000 images processed during training, which should be enough to see some meaningful colorization results.
+"""
