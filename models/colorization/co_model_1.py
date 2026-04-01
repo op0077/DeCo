@@ -304,6 +304,6 @@ Feed L into model → get predicted ab
 Merge L + predicted ab → convert back to RGB → colorized image
 So yes: L (lightness/grayscale) in → model → ab (color) out.
 
-(--epochs 20 --steps-per-epoch 100 --batch-size 4)
-20 epochs × 100 steps × 4 images = 8,000 images processed during training, which should be enough to see some meaningful colorization results.
+(--epochs 20 --steps-per-epoch 1000 --batch-size 8)
+20 epochs × 1000 steps × 8 images = 160,000 images processed during training, which should be enough to see some meaningful colorization results.
 """
